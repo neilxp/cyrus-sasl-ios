@@ -22,7 +22,7 @@
 #  Change values here													  #
 #																		  #
 VERSION="2.1.25"													      #
-SDKVERSION="5.0"														  #
+SDKVERSION="6.1"														  #
 #																		  #
 ###########################################################################
 #																		  #
@@ -32,7 +32,8 @@ SDKVERSION="5.0"														  #
 
 
 CURRENTPATH=`pwd`
-ARCHS="i386 armv6 armv7"
+ARCHS="i386 armv7 armv7s"
+DEVELOPER=`xcode-select -print-path`
 
 set -e
 if [ ! -e cyrus-sasl-${VERSION}.tar.gz ]; then
@@ -58,16 +59,22 @@ do
 		PLATFORM="iPhoneOS"
 	fi
 		
-	CC="/Developer/Platforms/${PLATFORM}.platform/Developer/usr/bin/gcc"
-	CFLAGS="-isysroot /Developer/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${SDKVERSION}.sdk -arch ${ARCH} -pipe -Os -gdwarf-2"
-	LDFLAGS="-isysroot /Developer/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${SDKVERSION}.sdk -arch ${ARCH}"		
-	
 	echo "Building cyrus-sasl-${VERSION} for ${PLATFORM} ${SDKVERSION} ${ARCH}"
 	echo "Please stand by..."
-	export CC=${CC}
-	export CFLAGS=${CFLAGS}
-	export LDFLAGS=${LDFLAGS}
 
+	export DEVROOT="${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer"
+	export SDKROOT="${DEVROOT}/SDKs/${PLATFORM}${SDKVERSION}.sdk"
+
+	export CC=${DEVROOT}/usr/bin/gcc
+	export LD=${DEVROOT}/usr/bin/ld
+	export CPP=${DEVROOT}/usr/bin/llvm-cpp-4.2
+	export CXX=${DEVROOT}/usr/bin/g++
+#	CFLAGS="-isysroot /Developer/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${SDKVERSION}.sdk -arch ${ARCH} -pipe -Os -gdwarf-2"
+#	LDFLAGS="-isysroot /Developer/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${SDKVERSION}.sdk -arch ${ARCH}"		
+	export LDFLAGS="-arch ${ARCH} -pipe -no-cpp-precomp -isysroot ${SDKROOT} -L${CURRENTPATH}/lib"
+	export CFLAGS="-arch ${ARCH} -pipe -no-cpp-precomp -isysroot ${SDKROOT} -I${CURRENTPATH}/include"
+	export CXXFLAGS="-arch ${ARCH} -pipe -no-cpp-precomp -isysroot ${SDKROOT} -I${CURRENTPATH}/include"
+	
 	mkdir -p "${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk"
 	LOG="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk/build-cyrus-sasl-${VERSION}.log"
 
@@ -85,7 +92,7 @@ do
 done
 
 echo "Build library..."
-lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libsasl2.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv6.sdk/lib/libsasl2.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libsasl2.a -output ${CURRENTPATH}/lib/libsasl2.a
+lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libsasl2.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libsasl2.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7s.sdk/lib/libsasl2.a -output ${CURRENTPATH}/lib/libsasl2.a
 mkdir -p ${CURRENTPATH}/include
 echo "Building done."
 echo "Done."

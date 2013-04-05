@@ -21,8 +21,8 @@
 ###########################################################################
 #  Change values here													  #
 #																		  #
-VERSION="1.0.0g"													      #
-SDKVERSION="5.0"														  #
+VERSION="1.0.1e"													      #
+SDKVERSION="6.1"														  #
 #																		  #
 ###########################################################################
 #																		  #
@@ -31,7 +31,8 @@ SDKVERSION="5.0"														  #
 ###########################################################################
 
 CURRENTPATH=`pwd`
-ARCHS="i386 armv6 armv7"
+ARCHS="i386 armv7 armv7s"
+DEVELOPER=`xcode-select -print-path`
 
 set -e
 if [ ! -e openssl-${VERSION}.tar.gz ]; then
@@ -62,13 +63,19 @@ do
 	echo "Building openssl-${VERSION} for ${PLATFORM} ${SDKVERSION} ${ARCH}"
 	echo "Please stand by..."
 
-	export CC="/Developer/Platforms/${PLATFORM}.platform/Developer/usr/bin/gcc -arch ${ARCH}"
+	export DEVROOT="${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer"
+	export SDKROOT="${DEVROOT}/SDKs/${PLATFORM}${SDKVERSION}.sdk"
+
+	export CC="${DEVROOT}/usr/bin/gcc -arch ${ARCH}"
+	export LD=${DEVROOT}/usr/bin/ld
+	export CPP=${DEVROOT}/usr/bin/llvm-cpp-4.2
+	export CXX=${DEVROOT}/usr/bin/g++
 	mkdir -p "${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk"
 	LOG="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk/build-openssl-${VERSION}.log"
 
 	./configure BSD-generic32 --openssldir="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk" > "${LOG}" 2>&1
 	# add -isysroot to CC=
-	sed -ie "s!^CFLAG=!CFLAG=-isysroot /Developer/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${SDKVERSION}.sdk !" "Makefile"
+	sed -ie "s!^CFLAG=!CFLAG=-isysroot ${DEVROOT}/SDKs/${PLATFORM}${SDKVERSION}.sdk !" "Makefile"
 
 	make >> "${LOG}" 2>&1
 	make install >> "${LOG}" 2>&1
@@ -76,9 +83,9 @@ do
 done
 
 echo "Build library..."
-lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libssl.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv6.sdk/lib/libssl.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libssl.a -output ${CURRENTPATH}/lib/libssl.a
+lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libssl.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libssl.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7s.sdk/lib/libssl.a -output ${CURRENTPATH}/lib/libssl.a
 
-lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libcrypto.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv6.sdk/lib/libcrypto.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libcrypto.a -output ${CURRENTPATH}/lib/libcrypto.a
+lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libcrypto.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libcrypto.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7s.sdk/lib/libcrypto.a -output ${CURRENTPATH}/lib/libcrypto.a
 
 mkdir -p ${CURRENTPATH}/include
 cp -R ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/include/openssl ${CURRENTPATH}/include/
